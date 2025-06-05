@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>VP7</title>
+
+    <link rel = "icon" type = "image/x-icon" href = "images/favicon.ico">
+
+    <script type = "text/javascript">
+      let gl;
+
+      let startTime, frameW, frameH;
+
+      let mat;
+      mat.Vec2Set = function (a, b)
+      {
+          let vec2;
+          vec2.X = a;
+          vec2.Y = b; 
+      };
+      
+      mat.Vec3Set = function (a, b, c)
+      {
+          let vec2;
+          vec3.X = a;
+          vec3.Y = b; 
+          vec3.Z = c;
+      };
+      
+      mat.Vec4Set = function (a, b, c, d)
+      {
+          let vec4;
+          vec4.X = a;
+          vec4.Y = b; 
+          vec4.Z = c;
+          vec4.W = d; 
+      };
+
+      mat.VecAddVec = function (a, b)
+      {
+        return VecSet(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+      };
+
+      mat.VecSubVec = function (V1, V2)
+      {
+          let v;
+
+          v.X = V1.X - V2.X;
+          v.Y = V1.Y - V2.Y;
+          v.Z = V1.Z - V2.Z;
+          return v;
+      };
+
+      mat.VecMulNum = function (V1, N)
+      {
+          let V;
+
+          V.X = V1.X * N;
+          V.Y = V1.Y * N;
+          V.Z = V1.Z * N;
+          return V;
+      };
+
+      mat.VecDivNum = function (V1, N)
+      {
+          let V;
+
+          V.X = V1.X * N;
+          V.Y = V1.Y * N;
+          V.Z = V1.Z * N;
+          return V;
+      };
+
+      mat.VecNeg = function (V)
+      {
+          return VecSet(-V.X, -V.Y, -V.Z);
+      };
+
+      mat.VecDotVec = function (V1, V2)
+      {
+          return V1.X * V2.X + V1.Y * V2.Y + V1.Z * V2.Z;
+      };
+
+      mat.VecLen = function(V)
+      {
+          let long = VecDotVec(V, V);
+ 
+          if (long == 1 || long == 0)
+              return long;
+          return sqrt(long);
+
+      };
+
+      mat.VecLen2 = function(V)
+      {
+        let len = VecDotVec(V, V);
+        
+        if (len == 1 || len == 0)
+            return len;
+        return len;
+      };
+
+
+      mat.VecNormalize = function(V)
+      {
+        let len = VecDotVec(V, V);
+ 
+        if (len == 1 || len == 0)
+          return V;
+        return VecDivNum(V, sqrt(len));
+      };
+
+      mat.VecCrossVec = function(V1, V2)
+      {
+       return VecSet(-V1.Z * V2.Y + V1.Y * V2.Z,
+                     -V1.X * V2.Z + V1.Z * V2.X,
+                     -V1.Y * V2.X + V1.X * V2.Y);
+ 
+      };
+
+      mat.Matr4x4Set = function(A00, A01, A02, A03,
+                                A10, A11, A12, A13,
+                                A20, A21, A22, A23,
+                                A30, A31, A32, A33)
+      {
+        let mat;
+        
+        mat.A00 = A00;
+        mat.A01 = A01;
+        mat.A02 = A02;
+        mat.A03 = A03;
+        mat.A10 = A10;
+        mat.A11 = A11;
+        mat.A12 = A12;
+        mat.A13 = A13;
+        mat.A20 = A20;
+        mat.A21 = A21;
+        mat.A22 = A22;
+        mat.A23 = A23;
+        mat.A30 = A30;
+        mat.A31 = A31;
+        mat.A32 = A32;
+        mat.A33 = A33;
+      };
+
+      mat.MatrIentity = function()
+      {
+        Mare4x4Set(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+      };
+
+        
+
+
+      function getShader(shaderStr, type) 
+      {
+        const shader = gl.createShader(type);
+
+        gl.shaderSource(shader, shaderStr);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+        {
+          alert(gl.getShaderInfoLog(shader));
+        }
+
+        return shader;
+      }
+
+      function initGL(canvas) 
+      {
+        gl = canvas.getContext("webgl2");
+        gl.viewportWidth = canvas.width;
+        gl.viewportHeight = canvas.height;
+      }
+      
+      let u_time_location;
+
+      function initShaders() 
+      {
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          alert("Program linkage error");
+        }
+
+        gl.useProgram(program);
+
+        u_time_location = gl.getUniformLocation(program, "u_time");
+      }
+
+
+      function onStart() 
+      {
+        let canvas = document.getElementById("webgl-canvas");
+
+        initGL(canvas);
+        initShaders();
+       
+        startTime = (new Date()).getMilliseconds();
+        frameW = canvas.width;
+        frameH = canvas.height;
+        x0 = frameW / 2;
+        y0 = frameH / 2;
+        zoom = 0.8;
+        drawScene();
+      }
+
+      function drawScene() 
+      {
+        gl.clearColor(0, 1, 0, 1);
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        timeFromStart = (new Date()).getMilliseconds() - startTime;
+        window.requestAnimationFrame(drawScene);
+      }
+
+    </script>
+  </head>
+  <body onload = "onStart();">
+        <canvas
+        id = "webgl-canvas"
+        style = "border: none"
+        width = 500
+        height = 500
+        ></canvas>
+  </body>
+</html>

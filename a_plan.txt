@@ -1,0 +1,30 @@
+      function CMPL_AddCmpl( A, B )
+      {
+        let C;
+    
+        C.re = ((A.re + B.re) - (A.im * B.im));
+        C.im = (A.re + B.im) + (B.re * A.im);
+                  
+        return C;
+     }  
+
+      function CMPL_MulCmpl( A, B )
+      {
+        let C;
+    
+        C.re = ((A.re * B.re) - (A.im * B.im));
+        C.im = (A.re * B.im) + (B.re * A.im);
+
+        return C;
+     }  
+
+      function Mandelbrot(A){
+        let n = 0;
+        let Z0 = A;
+        while (n < 255 && (CMPL_Norm2(A) < 4))
+        {
+            A = CMPL_AddCmpl(CMPL_MulCmpl(A, A), Z0);
+            n++;
+        }
+        return n;
+      }

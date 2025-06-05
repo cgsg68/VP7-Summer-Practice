@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>VP7</title>
+
+    <link rel = "icon" type = "image/x-icon" href = "images/favicon.ico">
+
+    <script type = "text/javascript">
+      let gl;
+
+      let startTime, zoom, x0, y0, frameW, frameH;
+
+      const shaderFs = 
+       `#version 300 es
+        precision highp float;
+        layout (location = 0) out vec4 OutColor;
+
+        uniform float u_time;
+        uniform float u_x0;
+        uniform float u_y0;
+        uniform float u_zoom;
+
+        uniform float u_frameW;
+        uniform float u_frameH;
+
+        float Julia( vec2 Z, vec2 C )
+        {
+          int n = 0;
+
+          while ((Z.x * Z.x + Z.y * Z.y < 4.0) && (n < 121))
+          {
+            Z = C + vec2(Z.x * Z.x - Z.y * Z.y, 2.0 * Z.x * Z.y);
+            n++;
+          }
+          return float(n - 47) ;
+        }
+
+        void main()
+        {
+          float x = gl_FragCoord.x, y = gl_FragCoord.y;
+          float time = 18.47 * sin(2.0 * acos(-1.0) * u_time * 0.000001);
+
+          float newX = 2.0 * (u_x0 + u_frameW / (2.0 * u_zoom) * (2.0 * x / u_frameW - 1.0)) / u_frameW - 1.0;
+          float newY = 2.0 * (u_y0 + u_frameH / (2.0 * u_zoom) * (2.0 * y / u_frameH - 1.0)) / u_frameH - 1.0;
+
+          vec2 Z = vec2(newX, newY);   
+          vec2 C = vec2(0.35 + 0.02 * time, 0.37 + 0.02 * time * 0.1);
+
+          float n = Julia(Z, C);
+
+          OutColor = vec4(n / 18.47, n * 13.7, n, 1.0);
+        }`;
+
+      const shaderVs = 
+       `#version 300 es
+        precision highp float;
+
+        layout (location = 0) in vec2 InPosition;
+
+        void main() 
+        {
+          gl_Position = vec4(InPosition, 0, 1);
+        }`;
+
+      function getShader(shaderStr, type) 
+      {
+        const shader = gl.createShader(type);
+
+        gl.shaderSource(shader, shaderStr);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+        {
+          alert(gl.getShaderInfoLog(shader));
+        }
+
+        return shader;
+      }
+
+      function initGL(canvas) 
+      {
+        gl = canvas.getContext("webgl2");
+        gl.viewportWidth = canvas.width;
+        gl.viewportHeight = canvas.height;
+      }
+      
+      let u_time_location, u_x0_location, u_y0_location, 
+        u_zoom_location, u_frameW_location, u_frameH_location, u_mX_location, u_mY_location;
+
+      function initShaders() 
+      {
+        const vs = getShader(shaderFs, gl.FRAGMENT_SHADER);
+        const fs = getShader(shaderVs, gl.VERTEX_SHADER);
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          alert("Program linkage error");
+        }
+
+        gl.useProgram(program);
+
+        u_time_location = gl.getUniformLocation(program, "u_time");
+        u_x0_location = gl.getUniformLocation(program, "u_x0");
+        u_y0_location = gl.getUniformLocation(program, "u_y0");
+        u_frameW_location = gl.getUniformLocation(program, "u_frameW");
+        u_frameH_location = gl.getUniformLocation(program, "u_frameH");
+        u_zoom_location = gl.getUniformLocation(program, "u_zoom");
+      }
+
+      let vertexBuffer;
+
+      function initBuffer() 
+      {
+        vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        vertices = [-1, -1, 3, -1, -1, 3];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+      }
+
+      let mousePressed = false; 
+      let lastX = -1, lastY = -1;
+
+      function onStart() 
+      {
+        console.log("Initialization starting...");
+
+        let canvas = document.getElementById("webgl-canvas");
+
+        canvas.onmousedown = (ev) => { mousePressed = true; }
+        canvas.onmouseup = (ev) => { mousePressed = false; }
+        canvas.onmousemove = (ev) =>
+        {
+          if (lastX == -1 || lastY == -1)
+          {
+            lastX = ev.x;
+            lastY = ev.y;
+          }
+          if (mousePressed)
+          {
+            x0 -= (ev.x - lastX) / zoom;
+            y0 += (ev.y - lastY) / zoom;
+          }
+          lastX = ev.x;
+          lastY = ev.y;
+        }
+        canvas.onwheel = (ev) => 
+        { 
+          zoom *= 1 - ev.deltaY / 1000; 
+          x0 -= (lastX / zoom - frameW / (2 * zoom)) * ev.deltaY / 1000;
+          y0 += (lastY / zoom - frameH / (2 * zoom)) * ev.deltaY / 1000;
+        }
+        canvas.onresize = (ev) => 
+        {
+          frameW = ev.width;
+          frameH = ev.height;
+        }
+
+        initGL(canvas);
+        initShaders();
+        initBuffer();
+
+        startTime = (new Date()).getMilliseconds();
+        frameW = canvas.width;
+        frameH = canvas.height;
+        x0 = frameW / 2;
+        y0 = frameH / 2;
+        zoom = 0.8;
+        IsPause = false;
+        drawScene();
+      }
+
+      function drawScene() 
+      {
+        gl.clearColor(0, 1, 0, 1);
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+        timeFromStart = (new Date()).getMilliseconds() - startTime;
+        if (!IsPause)
+        {
+          gl.uniform1f(u_time_location, timeFromStart);
+        }
+        gl.uniform1f(u_x0_location, x0);
+        gl.uniform1f(u_y0_location, y0);
+        gl.uniform1f(u_zoom_location, zoom);
+        gl.uniform1f(u_frameW_location, frameW);
+        gl.uniform1f(u_frameH_location, frameH);
+        gl.uniform1f(u_mX_location, lastX);
+        gl.uniform1f(u_mY_location, lastY);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        window.requestAnimationFrame(drawScene);
+      }
+
+    </script>
+  </head>
+  <body onload = "onStart();">
+        <canvas
+        id = "webgl-canvas"
+        style = "border: none"
+        width = 500
+        height = 500
+        ></canvas>
+  </body>
+</html>

@@ -1,0 +1,110 @@
+Objects
+
+let a = P{};
+a.prop1 = 1;
+a.p2 = "adfask"
+
+
+
+
+ler b = 
+{
+    p1: 1,
+    p2: "asdasa"
+}
+
+
+funcrion maleUder(name, ahe)
+{
+    this.name = name;
+    thus.ahe =ahe;
+}
+
+c = newUser
+
+
+
+
+let bd = {
+    yser: [];
+}
+
+function Db() 
+{
+    this.search = 5
+    this.user = [];
+
+    this.setSra
+}
+
+
+
+
+class 
+
+
+
+class Base 
+{
+    constructor(tupe)
+    {
+        this.
+    }
+}
+
+class Shader
+{
+    constructor(sourse, type)
+    {
+        this.sotse  = sourse;
+        this.tupe = tupe;
+    }
+
+}
+
+
+
+function load(resourse)
+{
+    if (false)
+    {
+        return resourse;
+    }
+    else 
+    {
+        error = "..."
+    }
+}
+
+try  - catch
+
+catch
+
+fuvction f (erre\or flag)
+
+
+const str  = JSON.stringify(mesege);
+const obj  = JSON.prase(sre);
+
+
+
+1 java skript single thread
+2 
+
+
+
+const p = new Promise((resolve, reject) => {
+    resolve("Dome")
+})
+
+
+module.export = {
+    input: "srv/main.js",
+    output: {
+        dir: "dist"
+        format "life"
+        soursemap: ""
+    };
+    pulhons
+
+}
